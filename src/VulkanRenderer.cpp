@@ -40,15 +40,29 @@ void checkError(VkResult result) {
 
 
 VulkanRenderer::VulkanRenderer() {
+    initLayersAndExtensions();
     createInstance();
+
     selectPhysicalDevice();
     createLogicalDevice();
+
+    createCommandPool();
 }
 
 
 VulkanRenderer::~VulkanRenderer() {
+    destroyCommandPool();
+
     destroyLogicalDevice();
+
     destroyInstance();
+}
+
+
+void VulkanRenderer::initLayersAndExtensions()
+{
+    mInstanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+    mInstanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
 }
 
 
@@ -67,8 +81,10 @@ void VulkanRenderer::createInstance() {
     instance_create_info.pNext = NULL;
     instance_create_info.flags = 0;
     instance_create_info.pApplicationInfo = &app_info;
-    instance_create_info.enabledExtensionCount = 0;
-    instance_create_info.ppEnabledExtensionNames = NULL;
+    instance_create_info.enabledExtensionCount = mInstanceExtensions.size();
+    instance_create_info.ppEnabledExtensionNames = mInstanceExtensions.empty()
+                                                   ? nullptr
+                                                   : mInstanceExtensions.data();
     instance_create_info.enabledLayerCount = 0;
     instance_create_info.ppEnabledLayerNames = NULL;
 
@@ -145,9 +161,33 @@ void VulkanRenderer::destroyLogicalDevice() {
 }
 
 
+void VulkanRenderer::createCommandPool()
+{
+    VkCommandPoolCreateInfo cmd_pool_create_info{};
+    cmd_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    cmd_pool_create_info.pNext = NULL;
+    cmd_pool_create_info.queueFamilyIndex = mGraphcicQueueFamilyIndex;
+    cmd_pool_create_info.flags = 0;
+
+    vkCreateCommandPool(mDevice, &cmd_pool_create_info, nullptr, &mCommandPool);
+}
 
 
+void VulkanRenderer::destroyCommandPool() {
+    vkDestroyCommandPool(mDevice, mCommandPool, nullptr);
+}
 
+
+void VulkanRenderer::createCommandBuffer() {
+    VkCommandBufferAllocateInfo cmd_buffer_alloc_info{};
+    cmd_buffer_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmd_buffer_alloc_info.pNext = NULL;
+    cmd_buffer_alloc_info.commandPool = mCommandPool;
+    cmd_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    cmd_buffer_alloc_info.commandBufferCount = 1;
+
+    vkAllocateCommandBuffers(mDevice, &cmd_buffer_alloc_info, &mCommandBuffer);
+}
 
 
 
