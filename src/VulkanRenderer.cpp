@@ -9,6 +9,7 @@
 
 #include <assert.h>
 #include <iostream>
+#include <vector>
 
 void checkError(VkResult result) {
     if (result < 0) {
@@ -40,10 +41,13 @@ void checkError(VkResult result) {
 
 VulkanRenderer::VulkanRenderer() {
     createInstance();
+    selectPhysicalDevice();
+    createLogicalDevice();
 }
 
 
 VulkanRenderer::~VulkanRenderer() {
+    destroyLogicalDevice();
     destroyInstance();
 }
 
@@ -81,11 +85,64 @@ void VulkanRenderer::selectPhysicalDevice() {
     //Get the number of devices (GPUs) available.
     uint32_t gpu_count = 0;
     vkEnumeratePhysicalDevices(mInstance, &gpu_count, nullptr);
-
     std::vector<VkPhysicalDevice> gpuList(gpu_count);
     vkEnumeratePhysicalDevices(mInstance, &gpu_count, gpuList.data());
+
+    bool found = false;
+    for (const auto& gpu : gpuList) {
+        uint32_t property_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(gpu, &property_count, nullptr);
+        std::vector<VkQueueFamilyProperties> properties(property_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(gpu, &property_count, properties.data());
+
+        for (uint32_t i = 0; i < property_count; ++i) {
+            if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                mGraphcicQueueFamilyIndex = i;
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            mGpu = gpu;
+            break;
+        }
+    }
+
+    if (mGpu == VK_NULL_HANDLE) {
+        std::cout << "Failed to find a suitable GPU!" << std::endl;
+        std::exit(-1);
+    }
 }
 
+void VulkanRenderer::createLogicalDevice() {
+    float queue_priorities[1] = {0.0};
+    VkDeviceQueueCreateInfo queue_create_info{};
+    queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info.queueFamilyIndex = mGraphcicQueueFamilyIndex;
+    queue_create_info.queueCount = 1;
+    queue_create_info.pQueuePriorities = queue_priorities;
+
+    VkDeviceCreateInfo device_create_info{};
+    device_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    device_create_info.queueCreateInfoCount = 1;
+    device_create_info.pQueueCreateInfos = &queue_create_info;
+    device_create_info.enabledExtensionCount = 0;
+    device_create_info.ppEnabledExtensionNames = nullptr;
+    device_create_info.enabledLayerCount = 0;
+    device_create_info.ppEnabledLayerNames = nullptr;
+    device_create_info.pEnabledFeatures = nullptr;
+
+    vkCreateDevice(mGpu, &device_create_info, nullptr, &mDevice);
+
+    vkGetDeviceQueue(mDevice, mGraphcicQueueFamilyIndex, 0, &mGraphicsQueue);
+}
+
+
+void VulkanRenderer::destroyLogicalDevice() {
+    vkDestroyDevice(mDevice, nullptr);
+    mDevice = VK_NULL_HANDLE;
+}
 
 
 
