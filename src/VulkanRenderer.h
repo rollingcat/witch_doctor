@@ -42,6 +42,7 @@ private:
     void destroyImageViews();
 
     void createRenderPass();
+    void destroyRenderPass();
 
     GLFWwindow* mWindow = nullptr;
 
@@ -63,6 +64,8 @@ private:
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
+
+    VkRenderPass mRenderPass = VK_NULL_HANDLE;
 };
 
 class SwapchainInfo {
