@@ -24,6 +24,9 @@ private:
     void createInstance();
     void destroyInstance();
 
+    void createSurface();
+    void destroySurface();
+
     void selectPhysicalDevice();
     void createLogicalDevice();
     void destroyLogicalDevice();
@@ -32,8 +35,13 @@ private:
     void destroyCommandPool();
     void createCommandBuffer();
 
-    void createSurface();
-    void destroySurface();
+    void createSwapchain();
+    void destroySwapchain();
+
+    void createImageViews();
+    void destroyImageViews();
+
+    void createRenderPass();
 
     GLFWwindow* mWindow = nullptr;
 
@@ -50,6 +58,23 @@ private:
     VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
 
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
+    VkSurfaceFormatKHR mSurfaceFormat;
+
+    VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+    std::vector<VkImage> mSwapchainImages;
+    std::vector<VkImageView> mSwapchainImageViews;
+};
+
+class SwapchainInfo {
+public:
+    void querySwapchainSupport(VkPhysicalDevice, VkSurfaceKHR);
+
+    VkSurfaceFormatKHR chooseSwapchainFormat();
+    VkPresentModeKHR chooseSwapchainPresentMode();
+
+    VkSurfaceCapabilitiesKHR mCapabilities;
+    std::vector<VkSurfaceFormatKHR> mSurfaceFormats;
+    std::vector<VkPresentModeKHR> mPresentModes;
 };
 
 #endif /* VULKANRENDERER_H_ */

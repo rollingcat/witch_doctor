@@ -50,10 +50,18 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     createLogicalDevice();
 
     createCommandPool();
+
+    createSwapchain();
+
+    createImageViews();
 }
 
 
 VulkanRenderer::~VulkanRenderer() {
+    destroyImageViews();
+
+    destroySwapchain();
+
     destroyCommandPool();
 
     destroyLogicalDevice();
@@ -219,17 +227,105 @@ void VulkanRenderer::destroySurface() {
 }
 
 
+void VulkanRenderer::createSwapchain() {
+    SwapchainInfo swapchain_info;
+    swapchain_info.querySwapchainSupport(mGpu, mSurface);
+
+    mSurfaceFormat = swapchain_info.chooseSwapchainFormat();
+
+    VkSwapchainCreateInfoKHR swapchain_create_info;
+    swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapchain_create_info.surface = mSurface;
+    swapchain_create_info.minImageCount = swapchain_info.mCapabilities.minImageCount;
+    swapchain_create_info.imageFormat = mSurfaceFormat.format;
+    swapchain_create_info.imageColorSpace = mSurfaceFormat.colorSpace;
+    swapchain_create_info.imageExtent = swapchain_info.mCapabilities.currentExtent;
+    swapchain_create_info.imageArrayLayers = 1;
+    swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    swapchain_create_info.preTransform = swapchain_info.mCapabilities.currentTransform;
+    swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    swapchain_create_info.presentMode = swapchain_info.chooseSwapchainPresentMode();
+    swapchain_create_info.clipped = VK_TRUE;
+    swapchain_create_info.oldSwapchain = VK_NULL_HANDLE;
+
+    vkCreateSwapchainKHR(mDevice, &swapchain_create_info, nullptr, &mSwapchain);
+
+    uint32_t image_count = 0;
+    vkGetSwapchainImagesKHR(mDevice, mSwapchain, &image_count, nullptr);
+    mSwapchainImages.resize(image_count);
+    vkGetSwapchainImagesKHR(mDevice, mSwapchain, &image_count, mSwapchainImages.data());
+}
 
 
+void VulkanRenderer::destroySwapchain() {
+    vkDestroySwapchainKHR(mDevice, mSwapchain, nullptr);
+    mSwapchain = VK_NULL_HANDLE;
+}
 
 
+void VulkanRenderer::createImageViews() {
+    mSwapchainImageViews.resize(mSwapchainImages.size());
+
+    for (uint32_t i = 0; i < mSwapchainImages.size(); i++) {
+        VkImageViewCreateInfo imageview_create_info{};
+        imageview_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageview_create_info.pNext = NULL;
+        imageview_create_info.flags = 0;
+        imageview_create_info.image = mSwapchainImages[i];
+        imageview_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageview_create_info.format = mSurfaceFormat.format;
+        imageview_create_info.components.r = VK_COMPONENT_SWIZZLE_R;
+        imageview_create_info.components.g = VK_COMPONENT_SWIZZLE_G;
+        imageview_create_info.components.b = VK_COMPONENT_SWIZZLE_B;
+        imageview_create_info.components.a = VK_COMPONENT_SWIZZLE_A;
+        imageview_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageview_create_info.subresourceRange.baseMipLevel = 0;
+        imageview_create_info.subresourceRange.levelCount = 1;
+        imageview_create_info.subresourceRange.baseArrayLayer = 0;
+        imageview_create_info.subresourceRange.layerCount = 1;
+
+        vkCreateImageView(mDevice, &imageview_create_info, nullptr, &mSwapchainImageViews[i]);
+    }
+}
 
 
+void VulkanRenderer::destroyImageViews() {
+    for (auto view : mSwapchainImageViews) {
+        vkDestroyImageView(mDevice, view, nullptr);
+    }
+}
 
 
+void SwapchainInfo::querySwapchainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &mCapabilities);
+
+    uint32_t format_count = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &format_count, nullptr);
+    mSurfaceFormats.resize(format_count);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(gpu, surface, &format_count, mSurfaceFormats.data());
+
+    uint32_t present_mode_count = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &present_mode_count, nullptr);
+    mPresentModes.resize(present_mode_count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(gpu, surface, &present_mode_count, mPresentModes.data());
+}
 
 
+VkSurfaceFormatKHR SwapchainInfo::chooseSwapchainFormat() {
+    for (const auto& surface_format : mSurfaceFormats) {
+        if (surface_format.format == VK_FORMAT_R8G8B8A8_UNORM &&
+            surface_format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            return surface_format;
+    }
+    return mSurfaceFormats[0];
+}
 
 
-
+VkPresentModeKHR SwapchainInfo::chooseSwapchainPresentMode() {
+    for (const auto& mode : mPresentModes) {
+        if (mode == VK_PRESENT_MODE_FIFO_KHR)
+            return mode;
+    }
+    return mPresentModes[0];
+}
 
