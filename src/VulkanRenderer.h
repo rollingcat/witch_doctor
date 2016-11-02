@@ -10,17 +10,17 @@
 
 #include <vector>
 
-#define VK_USE_PLATFORM_XCB_KHR
-#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 class VulkanRenderer
 {
 public:
-    VulkanRenderer();
+    VulkanRenderer(GLFWwindow*);
     ~VulkanRenderer();
 
 private:
-    void initLayersAndExtensions();
+    void initExtensions();
     void createInstance();
     void destroyInstance();
 
@@ -32,16 +32,24 @@ private:
     void destroyCommandPool();
     void createCommandBuffer();
 
+    void createSurface();
+    void destroySurface();
+
+    GLFWwindow* mWindow = nullptr;
+
     VkInstance mInstance = VK_NULL_HANDLE;
     std::vector<const char*> mInstanceExtensions;
     VkPhysicalDevice mGpu = VK_NULL_HANDLE;
     VkDevice mDevice = VK_NULL_HANDLE;
 
-    uint32_t mGraphcicQueueFamilyIndex;
+    uint32_t mGraphicsQueueFamilyIndex = UINT32_MAX;
+    uint32_t mPresentQueueFamilyIndex = UINT32_MAX;
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
+
+    VkSurfaceKHR mSurface = VK_NULL_HANDLE;
 };
 
 #endif /* VULKANRENDERER_H_ */

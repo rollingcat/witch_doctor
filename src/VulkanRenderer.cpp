@@ -39,9 +39,12 @@ void checkError(VkResult result) {
 }
 
 
-VulkanRenderer::VulkanRenderer() {
-    initLayersAndExtensions();
+VulkanRenderer::VulkanRenderer(GLFWwindow* window)
+    : mWindow(window) {
+    initExtensions();
     createInstance();
+
+    createSurface();
 
     selectPhysicalDevice();
     createLogicalDevice();
@@ -55,14 +58,20 @@ VulkanRenderer::~VulkanRenderer() {
 
     destroyLogicalDevice();
 
+    destroySurface();
+
     destroyInstance();
 }
 
 
-void VulkanRenderer::initLayersAndExtensions()
+void VulkanRenderer::initExtensions()
 {
-    mInstanceExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-    mInstanceExtensions.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+    uint32_t count;
+    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+
+    for (uint32_t i = 0; i < count; ++i) {
+        mInstanceExtensions.push_back(extensions[i]);
+    }
 }
 
 
@@ -113,7 +122,16 @@ void VulkanRenderer::selectPhysicalDevice() {
 
         for (uint32_t i = 0; i < property_count; ++i) {
             if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                mGraphcicQueueFamilyIndex = i;
+                mGraphicsQueueFamilyIndex = i;
+            }
+
+            VkBool32 present_support = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(gpu, i, mSurface, &present_support);
+            if (present_support == VK_TRUE) {
+                mPresentQueueFamilyIndex = i;
+            }
+
+            if (mGraphicsQueueFamilyIndex != UINT32_MAX && mPresentQueueFamilyIndex != UINT32_MAX) {
                 found = true;
                 break;
             }
@@ -135,7 +153,7 @@ void VulkanRenderer::createLogicalDevice() {
     float queue_priorities[1] = {0.0};
     VkDeviceQueueCreateInfo queue_create_info{};
     queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queue_create_info.queueFamilyIndex = mGraphcicQueueFamilyIndex;
+    queue_create_info.queueFamilyIndex = mGraphicsQueueFamilyIndex;
     queue_create_info.queueCount = 1;
     queue_create_info.pQueuePriorities = queue_priorities;
 
@@ -151,7 +169,7 @@ void VulkanRenderer::createLogicalDevice() {
 
     vkCreateDevice(mGpu, &device_create_info, nullptr, &mDevice);
 
-    vkGetDeviceQueue(mDevice, mGraphcicQueueFamilyIndex, 0, &mGraphicsQueue);
+    vkGetDeviceQueue(mDevice, mGraphicsQueueFamilyIndex, 0, &mGraphicsQueue);
 }
 
 
@@ -166,7 +184,7 @@ void VulkanRenderer::createCommandPool()
     VkCommandPoolCreateInfo cmd_pool_create_info{};
     cmd_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     cmd_pool_create_info.pNext = NULL;
-    cmd_pool_create_info.queueFamilyIndex = mGraphcicQueueFamilyIndex;
+    cmd_pool_create_info.queueFamilyIndex = mGraphicsQueueFamilyIndex;
     cmd_pool_create_info.flags = 0;
 
     vkCreateCommandPool(mDevice, &cmd_pool_create_info, nullptr, &mCommandPool);
@@ -189,6 +207,16 @@ void VulkanRenderer::createCommandBuffer() {
     vkAllocateCommandBuffers(mDevice, &cmd_buffer_alloc_info, &mCommandBuffer);
 }
 
+
+void VulkanRenderer::createSurface() {
+    glfwCreateWindowSurface(mInstance, mWindow, NULL, &mSurface);
+}
+
+
+void VulkanRenderer::destroySurface() {
+    vkDestroySurfaceKHR(mInstance, mSurface, nullptr);
+    mSurface = VK_NULL_HANDLE;
+}
 
 
 
