@@ -33,7 +33,7 @@ private:
 
     void createCommandPool();
     void destroyCommandPool();
-    void createCommandBuffer();
+    void createCommandBuffers();
 
     void createSwapchain();
     void destroySwapchain();
@@ -52,6 +52,8 @@ private:
 
     void createShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule);
 
+    void recordCommandBuffer();
+
     GLFWwindow* mWindow = nullptr;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -64,7 +66,7 @@ private:
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
 
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
-    VkCommandBuffer mCommandBuffer = VK_NULL_HANDLE;
+    std::vector<VkCommandBuffer> mCommandBuffers;
 
     VkSurfaceKHR mSurface = VK_NULL_HANDLE;
     VkSurfaceFormatKHR mSurfaceFormat;

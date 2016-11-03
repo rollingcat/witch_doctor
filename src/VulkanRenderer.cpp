@@ -234,7 +234,9 @@ void VulkanRenderer::destroyCommandPool() {
 }
 
 
-void VulkanRenderer::createCommandBuffer() {
+void VulkanRenderer::createCommandBuffers() {
+    mCommandBuffers.resize(mSwapchainFramebuffers.size());
+
     VkCommandBufferAllocateInfo cmd_buffer_alloc_info{};
     cmd_buffer_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     cmd_buffer_alloc_info.pNext = NULL;
@@ -242,7 +244,7 @@ void VulkanRenderer::createCommandBuffer() {
     cmd_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     cmd_buffer_alloc_info.commandBufferCount = 1;
 
-    vkAllocateCommandBuffers(mDevice, &cmd_buffer_alloc_info, &mCommandBuffer);
+    vkAllocateCommandBuffers(mDevice, &cmd_buffer_alloc_info, mCommandBuffers.data());
 }
 
 
@@ -540,6 +542,38 @@ void VulkanRenderer::createShaderModule(const std::vector<char>& code, VkShaderM
 }
 
 
+void VulkanRenderer::recordCommandBuffer() {
+    for (size_t i = 0; mCommandBuffers.size(); ++i) {
+        VkCommandBufferBeginInfo begin_info {};
+        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+        begin_info.pInheritanceInfo = nullptr;
+
+        vkBeginCommandBuffer(mCommandBuffers[i], &begin_info);
+        {
+            VkRenderPassBeginInfo render_pass_begin_info {};
+            render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            render_pass_begin_info.renderPass = mRenderPass;
+            render_pass_begin_info.framebuffer = mSwapchainFramebuffers[i];
+
+            render_pass_begin_info.renderArea.offset = { 0, 0 };
+            render_pass_begin_info.renderArea.extent = mSwapchainExtent;
+
+            VkClearValue clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
+            render_pass_begin_info.clearValueCount = 1;
+            render_pass_begin_info.pClearValues = &clear_color;
+
+            vkCmdBeginRenderPass(mCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);\
+            {
+
+            }
+            vkCmdEndRenderPass(mCommandBuffers[i]);
+        }
+        vkEndCommandBuffer(mCommandBuffers[i]);
+    }
+}
+
+
 void SwapchainInfo::querySwapchainSupport(VkPhysicalDevice gpu, VkSurfaceKHR surface) {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu, surface, &mCapabilities);
 
@@ -572,4 +606,5 @@ VkPresentModeKHR SwapchainInfo::chooseSwapchainPresentMode() {
     }
     return mPresentModes[0];
 }
+
 
