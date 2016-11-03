@@ -56,10 +56,14 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     createImageViews();
 
     createRenderPass();
+
+    createFrameBuffer();
 }
 
 
 VulkanRenderer::~VulkanRenderer() {
+    destroyFrameBuffer();
+
     destroyRenderPass();
 
     destroyImageViews();
@@ -236,6 +240,7 @@ void VulkanRenderer::createSwapchain() {
     swapchain_info.querySwapchainSupport(mGpu, mSurface);
 
     mSurfaceFormat = swapchain_info.chooseSwapchainFormat();
+    mSwapchainExtent = swapchain_info.mCapabilities.currentExtent;
 
     VkSwapchainCreateInfoKHR swapchain_create_info;
     swapchain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -243,7 +248,7 @@ void VulkanRenderer::createSwapchain() {
     swapchain_create_info.minImageCount = swapchain_info.mCapabilities.minImageCount;
     swapchain_create_info.imageFormat = mSurfaceFormat.format;
     swapchain_create_info.imageColorSpace = mSurfaceFormat.colorSpace;
-    swapchain_create_info.imageExtent = swapchain_info.mCapabilities.currentExtent;
+    swapchain_create_info.imageExtent = mSwapchainExtent;
     swapchain_create_info.imageArrayLayers = 1;
     swapchain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     swapchain_create_info.preTransform = swapchain_info.mCapabilities.currentTransform;
@@ -336,6 +341,34 @@ void VulkanRenderer::createRenderPass() {
 void VulkanRenderer::destroyRenderPass() {
     vkDestroyRenderPass(mDevice, mRenderPass, nullptr);
     mRenderPass = VK_NULL_HANDLE;
+}
+
+
+void VulkanRenderer::createFrameBuffer() {
+    mSwapchainFramebuffers.resize(mSwapchainImageViews.size());
+
+    for (size_t i = 0 ; i < mSwapchainImageViews.size(); ++i) {
+        VkImageView attachments[] = { mSwapchainImageViews[i] };
+
+        VkFramebufferCreateInfo frame_buffer_create_info{};
+        frame_buffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frame_buffer_create_info.pNext = NULL;
+        frame_buffer_create_info.renderPass = mRenderPass;
+        frame_buffer_create_info.attachmentCount = 1;
+        frame_buffer_create_info.pAttachments = attachments;
+        frame_buffer_create_info.width = mSwapchainExtent.width;
+        frame_buffer_create_info.height = mSwapchainExtent.height;
+        frame_buffer_create_info.layers = 1;
+
+        vkCreateFramebuffer(mDevice, &frame_buffer_create_info, nullptr, &mSwapchainFramebuffers[i]);
+    }
+}
+
+
+void VulkanRenderer::destroyFrameBuffer() {
+    for (auto framebuffer : mSwapchainFramebuffers) {
+        vkDestroyFramebuffer(mDevice, framebuffer, nullptr);
+    }
 }
 
 

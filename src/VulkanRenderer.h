@@ -44,6 +44,9 @@ private:
     void createRenderPass();
     void destroyRenderPass();
 
+    void createFrameBuffer();
+    void destroyFrameBuffer();
+
     GLFWwindow* mWindow = nullptr;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -62,8 +65,11 @@ private:
     VkSurfaceFormatKHR mSurfaceFormat;
 
     VkSwapchainKHR mSwapchain = VK_NULL_HANDLE;
+    VkExtent2D mSwapchainExtent;
     std::vector<VkImage> mSwapchainImages;
     std::vector<VkImageView> mSwapchainImageViews;
+
+    std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
     VkRenderPass mRenderPass = VK_NULL_HANDLE;
 };
