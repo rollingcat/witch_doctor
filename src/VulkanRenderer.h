@@ -47,6 +47,11 @@ private:
     void createFrameBuffer();
     void destroyFrameBuffer();
 
+    void createGraphicsPipeline();
+    void destroyGraphicsPipeline();
+
+    void createShaderModule(const std::vector<char>& code, VkShaderModule& shaderModule);
+
     GLFWwindow* mWindow = nullptr;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -72,6 +77,9 @@ private:
     std::vector<VkFramebuffer> mSwapchainFramebuffers;
 
     VkRenderPass mRenderPass = VK_NULL_HANDLE;
+
+    VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
+    VkPipeline mPipeline = VK_NULL_HANDLE;
 };
 
 class SwapchainInfo {
