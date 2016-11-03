@@ -78,10 +78,14 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     createFrameBuffer();
 
     createGraphicsPipeline();
+
+    createSemaphores();
 }
 
 
 VulkanRenderer::~VulkanRenderer() {
+    destroySemaphores();
+
     destroyGraphicsPipeline();
 
     destroyFrameBuffer();
@@ -99,6 +103,36 @@ VulkanRenderer::~VulkanRenderer() {
     destroySurface();
 
     destroyInstance();
+}
+
+
+void VulkanRenderer::render() {
+//    uint32_t image_idx;
+//    vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSemaphoreImageAvailable, VK_NULL_HANDLE, &image_idx);
+//
+//    VkSemaphore wait_semaphores[] = { mSemaphoreImageAvailable };
+//    VkSemaphore signal_semaphores[] = { mSemaphoreRenderFinished };
+//    VkPipelineStageFlags wait_stage[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+//
+//    VkSubmitInfo submit_info {};
+//    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+//      submit_info.pWaitSemaphore = wait_semaphores;
+//      submit_info.commandBufferCount = 1;
+//
+//    vkQueueSubmit(mGraphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
+//
+//
+//    VkSwapchainKHR swapchains[] = { mSwapchain };
+//    VkPresentInfoKHR present_info {};
+//    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+//    present_info.swapchainCount = 1;
+//    present_info.pSwapchains = &mSwapchain;
+//    present_info.waitSemaphoreCount = 1;
+//    present_info.pWaitSemaphores = signal_semaphores;
+//    present_info.pImageIndices = &image_idx;
+//    present_info.pResults = NULL;
+//
+//    vkQueuePresentKHR(mPresentQueue, &present_info);
 }
 
 
@@ -563,7 +597,7 @@ void VulkanRenderer::recordCommandBuffer() {
             render_pass_begin_info.clearValueCount = 1;
             render_pass_begin_info.pClearValues = &clear_color;
 
-            vkCmdBeginRenderPass(mCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);\
+            vkCmdBeginRenderPass(mCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
             {
 
             }
@@ -571,6 +605,21 @@ void VulkanRenderer::recordCommandBuffer() {
         }
         vkEndCommandBuffer(mCommandBuffers[i]);
     }
+}
+
+
+void VulkanRenderer::createSemaphores() {
+    VkSemaphoreCreateInfo semaphore_info {};
+    semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    vkCreateSemaphore(mDevice, &semaphore_info, nullptr, &mSemaphoreImageAvailable);
+    vkCreateSemaphore(mDevice, &semaphore_info, nullptr, &mSemaphoreRenderFinished);
+}
+
+
+void VulkanRenderer::destroySemaphores() {
+    vkDestroySemaphore(mDevice, mSemaphoreImageAvailable, nullptr);
+    vkDestroySemaphore(mDevice, mSemaphoreRenderFinished, nullptr);
 }
 
 

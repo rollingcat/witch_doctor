@@ -19,6 +19,8 @@ public:
     VulkanRenderer(GLFWwindow*);
     ~VulkanRenderer();
 
+    void render();
+
 private:
     void initExtensions();
     void createInstance();
@@ -54,6 +56,9 @@ private:
 
     void recordCommandBuffer();
 
+    void createSemaphores();
+    void destroySemaphores();
+
     GLFWwindow* mWindow = nullptr;
 
     VkInstance mInstance = VK_NULL_HANDLE;
@@ -82,6 +87,9 @@ private:
 
     VkPipelineLayout mPipelineLayout = VK_NULL_HANDLE;
     VkPipeline mPipeline = VK_NULL_HANDLE;
+
+    VkSemaphore mSemaphoreImageAvailable = VK_NULL_HANDLE;
+    VkSemaphore mSemaphoreRenderFinished = VK_NULL_HANDLE;
 };
 
 class SwapchainInfo {
