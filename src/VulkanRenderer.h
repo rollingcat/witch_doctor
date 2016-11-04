@@ -69,6 +69,7 @@ private:
     uint32_t mGraphicsQueueFamilyIndex = UINT32_MAX;
     uint32_t mPresentQueueFamilyIndex = UINT32_MAX;
     VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+    VkQueue mPresentQueue = VK_NULL_HANDLE;
 
     VkCommandPool mCommandPool = VK_NULL_HANDLE;
     std::vector<VkCommandBuffer> mCommandBuffers;

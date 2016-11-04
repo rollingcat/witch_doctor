@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <cstdlib>
 
 #include "VulkanRenderer.h"
 
@@ -15,6 +14,8 @@ int main(int argc, char *argv[]) {
     VulkanRenderer renderer(window);
 
     while (!glfwWindowShouldClose(window)) {
+        renderer.render();
+
         glfwPollEvents();
     }
 

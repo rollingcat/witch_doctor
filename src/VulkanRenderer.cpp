@@ -7,67 +7,23 @@
 
 #include "VulkanRenderer.h"
 
-#include <assert.h>
 #include <iostream>
 #include <fstream>
-#include <vector>
 
-
-void checkError(VkResult result) {
-    if (result < 0) {
-        switch (result) {
-        case VK_ERROR_OUT_OF_HOST_MEMORY:
-            std::cout << "VK_ERROR_OUT_OF_HOST_MEMORY" << std::endl;
-            break;
-
-        case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-            std::cout << "VK_ERROR_OUT_OF_DEVICE_MEMORY" << std::endl;
-            break;
-
-        case VK_ERROR_INITIALIZATION_FAILED:
-            std::cout << "VK_ERROR_INITIALIZATION_FAILED" << std::endl;
-            break;
-
-        case VK_ERROR_DEVICE_LOST:
-            std::cout << "VK_ERROR_DEVICE_LOST" << std::endl;
-            break;
-
-        default:
-            std::cout << "result: " << result << std::endl;
-            break;
-        }
-    }
-    assert(0 && "Vulkan Runtime Error");
-}
-
-static std::vector<char> ReadAllBytes(char const* filename)
-{
-    std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
-    if (!ifs) {
-        std::cout << "failed to load " << filename << std::endl;
-    }
-    std::ifstream::pos_type pos = ifs.tellg();
-
-    std::vector<char> result(pos);
-
-    ifs.seekg(0, std::ios::beg);
-    ifs.read(&result[0], pos);
-
-    return result;
-}
+static std::vector<char> ReadAllBytes(char const* filename);
 
 
 VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     : mWindow(window) {
     initExtensions();
+
     createInstance();
 
     createSurface();
 
     selectPhysicalDevice();
-    createLogicalDevice();
 
-    createCommandPool();
+    createLogicalDevice();
 
     createSwapchain();
 
@@ -77,7 +33,13 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* window)
 
     createFrameBuffer();
 
+    createCommandPool();
+
+    createCommandBuffers();
+
     createGraphicsPipeline();
+
+    recordCommandBuffer();
 
     createSemaphores();
 }
@@ -88,6 +50,8 @@ VulkanRenderer::~VulkanRenderer() {
 
     destroyGraphicsPipeline();
 
+    destroyCommandPool();
+
     destroyFrameBuffer();
 
     destroyRenderPass();
@@ -95,8 +59,6 @@ VulkanRenderer::~VulkanRenderer() {
     destroyImageViews();
 
     destroySwapchain();
-
-    destroyCommandPool();
 
     destroyLogicalDevice();
 
@@ -107,32 +69,36 @@ VulkanRenderer::~VulkanRenderer() {
 
 
 void VulkanRenderer::render() {
-//    uint32_t image_idx;
-//    vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSemaphoreImageAvailable, VK_NULL_HANDLE, &image_idx);
-//
-//    VkSemaphore wait_semaphores[] = { mSemaphoreImageAvailable };
-//    VkSemaphore signal_semaphores[] = { mSemaphoreRenderFinished };
-//    VkPipelineStageFlags wait_stage[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-//
-//    VkSubmitInfo submit_info {};
-//    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-//      submit_info.pWaitSemaphore = wait_semaphores;
-//      submit_info.commandBufferCount = 1;
-//
-//    vkQueueSubmit(mGraphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
-//
-//
-//    VkSwapchainKHR swapchains[] = { mSwapchain };
-//    VkPresentInfoKHR present_info {};
-//    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-//    present_info.swapchainCount = 1;
-//    present_info.pSwapchains = &mSwapchain;
-//    present_info.waitSemaphoreCount = 1;
-//    present_info.pWaitSemaphores = signal_semaphores;
-//    present_info.pImageIndices = &image_idx;
-//    present_info.pResults = NULL;
-//
-//    vkQueuePresentKHR(mPresentQueue, &present_info);
+    uint32_t image_idx;
+    vkAcquireNextImageKHR(mDevice, mSwapchain, UINT64_MAX, mSemaphoreImageAvailable, VK_NULL_HANDLE, &image_idx);
+
+    VkSemaphore wait_semaphores[] = { mSemaphoreImageAvailable };
+    VkSemaphore signal_semaphores[] = { mSemaphoreRenderFinished };
+    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+    VkSubmitInfo submit_info {};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount = 1;
+    submit_info.pWaitSemaphores = wait_semaphores;
+    submit_info.pWaitDstStageMask = wait_stages;
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &mCommandBuffers[image_idx];
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = signal_semaphores;
+
+    vkQueueSubmit(mGraphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
+
+    VkSwapchainKHR swapchains[] = { mSwapchain };
+    VkPresentInfoKHR present_info {};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = signal_semaphores;
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = swapchains;
+    present_info.pImageIndices = &image_idx;
+    present_info.pResults = nullptr;
+
+    vkQueuePresentKHR(mPresentQueue, &present_info);
 }
 
 
@@ -142,6 +108,7 @@ void VulkanRenderer::initExtensions()
     const char** extensions = glfwGetRequiredInstanceExtensions(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
+        std::cout << "extensions " << i << " : " << extensions[i] << std::endl;
         mInstanceExtensions.push_back(extensions[i]);
     }
 }
@@ -242,6 +209,7 @@ void VulkanRenderer::createLogicalDevice() {
     vkCreateDevice(mGpu, &device_create_info, nullptr, &mDevice);
 
     vkGetDeviceQueue(mDevice, mGraphicsQueueFamilyIndex, 0, &mGraphicsQueue);
+    vkGetDeviceQueue(mDevice, mPresentQueueFamilyIndex, 0, &mPresentQueue);
 }
 
 
@@ -276,7 +244,7 @@ void VulkanRenderer::createCommandBuffers() {
     cmd_buffer_alloc_info.pNext = NULL;
     cmd_buffer_alloc_info.commandPool = mCommandPool;
     cmd_buffer_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmd_buffer_alloc_info.commandBufferCount = 1;
+    cmd_buffer_alloc_info.commandBufferCount = (uint32_t)mCommandBuffers.size();
 
     vkAllocateCommandBuffers(mDevice, &cmd_buffer_alloc_info, mCommandBuffers.data());
 }
@@ -577,7 +545,9 @@ void VulkanRenderer::createShaderModule(const std::vector<char>& code, VkShaderM
 
 
 void VulkanRenderer::recordCommandBuffer() {
-    for (size_t i = 0; mCommandBuffers.size(); ++i) {
+    std::cout << "record commandbuffer : " << mCommandBuffers.size() << std::endl;
+    for (size_t i = 0; i < mCommandBuffers.size(); ++i) {
+        std::cout << "commandbuffer : " << i << std::endl;
         VkCommandBufferBeginInfo begin_info {};
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -599,7 +569,8 @@ void VulkanRenderer::recordCommandBuffer() {
 
             vkCmdBeginRenderPass(mCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
             {
-
+                vkCmdBindPipeline(mCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, mPipeline);
+                vkCmdDraw(mCommandBuffers[i], 3, 1, 0, 0);
             }
             vkCmdEndRenderPass(mCommandBuffers[i]);
         }
@@ -657,3 +628,18 @@ VkPresentModeKHR SwapchainInfo::chooseSwapchainPresentMode() {
 }
 
 
+static std::vector<char> ReadAllBytes(char const* filename)
+{
+    std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
+    if (!ifs) {
+        std::cout << "failed to load " << filename << std::endl;
+    }
+    std::ifstream::pos_type pos = ifs.tellg();
+
+    std::vector<char> result(pos);
+
+    ifs.seekg(0, std::ios::beg);
+    ifs.read(&result[0], pos);
+
+    return result;
+}
