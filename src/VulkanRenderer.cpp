@@ -108,7 +108,6 @@ void VulkanRenderer::initExtensions()
     const char** extensions = glfwGetRequiredInstanceExtensions(&count);
 
     for (uint32_t i = 0; i < count; ++i) {
-        std::cout << "extensions " << i << " : " << extensions[i] << std::endl;
         mInstanceExtensions.push_back(extensions[i]);
     }
 }
@@ -545,9 +544,7 @@ void VulkanRenderer::createShaderModule(const std::vector<char>& code, VkShaderM
 
 
 void VulkanRenderer::recordCommandBuffer() {
-    std::cout << "record commandbuffer : " << mCommandBuffers.size() << std::endl;
     for (size_t i = 0; i < mCommandBuffers.size(); ++i) {
-        std::cout << "commandbuffer : " << i << std::endl;
         VkCommandBufferBeginInfo begin_info {};
         begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;

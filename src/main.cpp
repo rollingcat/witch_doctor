@@ -4,8 +4,6 @@
 #include "VulkanRenderer.h"
 
 int main(int argc, char *argv[]) {
-    std::cout << "VooDoo: Begin" << std::endl;
-
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -21,7 +19,5 @@ int main(int argc, char *argv[]) {
 
     glfwDestroyWindow(window);
     glfwTerminate();
-
-    std::cout << "VooDoo: End" << std::endl;
     return 0;
 }
