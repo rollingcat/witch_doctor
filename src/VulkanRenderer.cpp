@@ -631,8 +631,9 @@ VkPresentModeKHR SwapchainInfo::chooseSwapchainPresentMode() {
 static std::vector<char> ReadAllBytes(char const* filename)
 {
     std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
-    if (!ifs) {
+    if (!ifs.is_open()) {
         std::cout << "failed to load " << filename << std::endl;
+        std::exit(-1);
     }
     std::ifstream::pos_type pos = ifs.tellg();
 
