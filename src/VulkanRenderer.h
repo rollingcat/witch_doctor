@@ -13,6 +13,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "VulkanDeviceQueue.h"
+
 class VulkanRenderer
 {
 public:
@@ -91,6 +93,8 @@ private:
 
     VkSemaphore mSemaphoreImageAvailable = VK_NULL_HANDLE;
     VkSemaphore mSemaphoreRenderFinished = VK_NULL_HANDLE;
+
+    VulkanDeviceQueue device_queue_;
 };
 
 class SwapchainInfo {

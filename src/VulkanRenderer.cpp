@@ -6,6 +6,7 @@
  */
 
 #include "VulkanRenderer.h"
+#include "VulkanInstance.h"
 
 #include <iostream>
 #include <fstream>
@@ -20,6 +21,9 @@ VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     createInstance();
 
     createSurface();
+
+    device_queue_.Initialize(VulkanDeviceQueue::GRAPHICS_QUEUE_FLAG |
+                             VulkanDeviceQueue::PRESENTATION_SUPPORT_QUEUE_FLAG);
 
     selectPhysicalDevice();
 
