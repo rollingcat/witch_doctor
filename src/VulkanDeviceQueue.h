@@ -9,6 +9,7 @@
 #define VULKAN_DEVICE_QUEUE_H_
 
 #include <vulkan/vulkan.h>
+#include "VulkanInstance.h"
 
 class VulkanDeviceQueue
 {
@@ -22,16 +23,32 @@ public:
   ~VulkanDeviceQueue();
 
   bool Initialize(uint32_t options);
+  void Destroy();
 
-  VkDevice GetVulkanDevice() const { return mDevice; }
+  VkPhysicalDevice GetVulkanPhysicalDevice() const {
+    DCHECK_NE(static_cast<VkPhysicalDevice>(VK_NULL_HANDLE),
+              vk_physical_device_);
+    return vk_physical_device_;
+  }
 
+  VkDevice GetVulkanDevice() const {
+    DCHECK_NE(static_cast<VkDevice>(VK_NULL_HANDLE), vk_device_);
+    return vk_device_;
+  }
+
+  VkQueue GetVulkanQueue() const {
+    DCHECK_NE(static_cast<VkQueue>(VK_NULL_HANDLE), vk_queue_);
+    return vk_queue_;
+  }
+
+  uint32_t GetVulkanQueueIndex() const { return vk_queue_index_; }
 private:
-  VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
-  VkDevice mDevice = VK_NULL_HANDLE;
-  VkQueue mQueue = VK_NULL_HANDLE;
-  uint32_t mQueueIndex = 0;
+  bool SelectPhysicalDevice(uint32_t options);
+
+  VkPhysicalDevice vk_physical_device_ = VK_NULL_HANDLE;
+  VkDevice vk_device_ = VK_NULL_HANDLE;
+  VkQueue vk_queue_ = VK_NULL_HANDLE;
+  uint32_t vk_queue_index_ = 0;
 };
-
-
 
 #endif /* VULKAN_DEVICE_QUEUE_H_ */

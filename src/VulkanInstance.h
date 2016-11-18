@@ -29,10 +29,14 @@ public:
   true ? (void) 0 : LogMessageVoidify() & LOG(FATAL)
 
 #if DCHECK_IS_ON()
-#define DCHECK(condition) assert(condition);
+#define DCHECK(condition) assert(condition)
+#define DCHECK_NE(val1, val2) assert(val1 != val2)
+#define DCHECK_EQ(val1, val2) assert(val1 == val2)
 #define DLOG(severity) LogMessage(__FILE__, __LINE__, #severity).stream()
 #else
-#define DCHECK(condition) EAT_STREAM_PARAMETERS
+#define DCHECK_NE(val1, val2)
+#define DCHECK_EQ(val1, val2)
+#define DCHECK(condition)
 #define DLOG(severity) EAT_STREAM_PARAMETERS
 #endif
 
@@ -49,6 +53,9 @@ public:
 private:
   std::ostringstream stream_;
 };
+
+template <typename T, size_t N> char (&ArraySizeHelper(T (&array)[N]))[N];
+#define arraysize(array) (sizeof(ArraySizeHelper(array)))
 
 bool InitializeVulkan();
 bool VulkanSupported();
