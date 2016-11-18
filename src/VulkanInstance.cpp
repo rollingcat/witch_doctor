@@ -5,6 +5,9 @@
 #include <unordered_set>
 #include <string.h>
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 
 VkBool32 VulkanErrorCallback(
     VkDebugReportFlagsEXT       flags,
@@ -35,24 +38,30 @@ VkBool32 VulkanWarningCallback(
 class VulkanInstance {
 public:
   VulkanInstance() {}
+  ~VulkanInstance() {
+    if (vk_instance != VK_NULL_HANDLE) {
+      vkDestroyInstance(vk_instance, nullptr);
+      vk_instance = VK_NULL_HANDLE;
+    }
+  }
 
-  void Initialize() { valid = InitializeVulkanInstance(); }
+  void Initialize() {
+    InitializeExtensions();
+    valid = InitializeVulkanInstance();
+  }
 
-  bool InitializeVulkanInstance() {
+  bool InitializeExtensions() {
     VkResult result = VK_SUCCESS;
 
-    VkApplicationInfo app_info = {};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "Chromium";
-    app_info.apiVersion = VK_MAKE_VERSION(1, 0, 2);
-
-    std::vector<const char*> enabled_ext_names;
+#ifdef WD_USE_GLFW
+    uint32_t count = 0;
+    const char** extensions = glfwGetRequiredInstanceExtensions(&count);
+    for (uint32_t i = 0; i < count; ++i) {
+      enabled_ext_names.push_back(extensions[i]);
+    }
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
     enabled_ext_names.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-
-#if defined(VK_USE_PLATFORM_XLIB_KHR)
     enabled_ext_names.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    enabled_ext_names.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 #endif
 
     uint32_t num_instance_exts = 0;
@@ -73,7 +82,6 @@ public:
       return false;
     }
 
-    bool debug_report_enabled = false;
     for (const VkExtensionProperties& ext_property : instance_exts) {
       if (strcmp(ext_property.extensionName,
           VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0) {
@@ -82,8 +90,19 @@ public:
       }
     }
 
+    return true;
+  }
+
+  bool InitializeVulkanInstance() {
+    VkResult result = VK_SUCCESS;
+
+    VkApplicationInfo app_info = {};
+    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    app_info.pApplicationName = "Chromium";
+    app_info.apiVersion = VK_MAKE_VERSION(1, 0, 2);
+
     std::vector<const char*> enabled_layer_names;
-#if DCHECK_IS_ON()
+#if false //DCHECK_IS_ON()
     uint32_t num_instance_layers = 0;
     result = vkEnumerateInstanceLayerProperties(&num_instance_layers, nullptr);
     if (VK_SUCCESS != result) {
@@ -164,6 +183,8 @@ public:
 
   bool valid = false;
   VkInstance vk_instance = VK_NULL_HANDLE;
+  std::vector<const char*> enabled_ext_names;
+  bool debug_report_enabled = false;
 #if DCHECK_IS_ON()
   VkDebugReportCallbackEXT error_callback = VK_NULL_HANDLE;
   VkDebugReportCallbackEXT warning_callback = VK_NULL_HANDLE;

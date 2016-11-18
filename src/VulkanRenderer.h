@@ -1,12 +1,6 @@
-/*
- * VulkanRenderer.h
- *
- *  Created on: Nov 1, 2016
- *      Author: hyowon
- */
 
-#ifndef VULKANRENDERER_H_
-#define VULKANRENDERER_H_
+#ifndef VULKAN_RENDERER_H_
+#define VULKAN_RENDERER_H_
 
 #include <vector>
 
@@ -21,11 +15,12 @@ public:
     VulkanRenderer(GLFWwindow*);
     ~VulkanRenderer();
 
+    bool Init();
     void render();
 
 private:
     void initExtensions();
-    void createInstance();
+    bool createInstance();
     void destroyInstance();
 
     void createSurface();
@@ -109,4 +104,4 @@ public:
     std::vector<VkPresentModeKHR> mPresentModes;
 };
 
-#endif /* VULKANRENDERER_H_ */
+#endif /* VULKAN_RENDERER_H_ */

@@ -1,23 +1,24 @@
 
-#include <iostream>
-
 #include "VulkanRenderer.h"
 
 int main(int argc, char *argv[]) {
-    glfwInit();
+  glfwInit();
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Voodoo by Witch Doctor", nullptr, nullptr);
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  GLFWwindow* window = glfwCreateWindow(800, 600, "Voodoo by Witch Doctor", nullptr, nullptr);
 
-    VulkanRenderer renderer(window);
-
-    while (!glfwWindowShouldClose(window)) {
-        renderer.render();
-
-        glfwPollEvents();
-    }
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
+  VulkanRenderer renderer(window);
+  if (!renderer.Init()) {
     return 0;
+  }
+
+  while (!glfwWindowShouldClose(window)) {
+    renderer.render();
+
+    glfwPollEvents();
+  }
+
+  glfwDestroyWindow(window);
+  glfwTerminate();
+  return 0;
 }

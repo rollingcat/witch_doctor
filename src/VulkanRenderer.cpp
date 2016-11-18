@@ -1,9 +1,3 @@
-/*
- * VulkanRenderer.cpp
- *
- *  Created on: Nov 1, 2016
- *      Author: hyowon
- */
 
 #include "VulkanRenderer.h"
 #include "VulkanInstance.h"
@@ -16,36 +10,43 @@ static std::vector<char> ReadAllBytes(char const* filename);
 
 VulkanRenderer::VulkanRenderer(GLFWwindow* window)
     : mWindow(window) {
-    initExtensions();
+}
 
-    createInstance();
 
-    createSurface();
+bool VulkanRenderer::Init() {
+  if (!createInstance()) {
+    DLOG(ERROR) << "Failed to create Vulkan instance";
+    return false;
+  }
 
-    device_queue_.Initialize(VulkanDeviceQueue::GRAPHICS_QUEUE_FLAG |
-                             VulkanDeviceQueue::PRESENTATION_SUPPORT_QUEUE_FLAG);
+  createSurface();
 
-    selectPhysicalDevice();
+  device_queue_.Initialize(VulkanDeviceQueue::GRAPHICS_QUEUE_FLAG |
+                           VulkanDeviceQueue::PRESENTATION_SUPPORT_QUEUE_FLAG);
 
-    createLogicalDevice();
+  selectPhysicalDevice();
 
-    createSwapchain();
+  createLogicalDevice();
 
-    createImageViews();
+  createSwapchain();
 
-    createRenderPass();
+  createImageViews();
 
-    createFrameBuffer();
+  createRenderPass();
 
-    createCommandPool();
+  createFrameBuffer();
 
-    createCommandBuffers();
+  createCommandPool();
 
-    createGraphicsPipeline();
+  createCommandBuffers();
 
-    recordCommandBuffer();
+  createGraphicsPipeline();
 
-    createSemaphores();
+  recordCommandBuffer();
+
+  createSemaphores();
+
+  return true;
 }
 
 
@@ -113,38 +114,21 @@ void VulkanRenderer::initExtensions()
 
     for (uint32_t i = 0; i < count; ++i) {
         mInstanceExtensions.push_back(extensions[i]);
+        LOG(INFO) << "glfw: " << extensions[i];
     }
 }
 
 
-void VulkanRenderer::createInstance() {
-    VkApplicationInfo app_info = {};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pNext = NULL;
-    app_info.pApplicationName = "VooDoo";
-    app_info.applicationVersion = 1;
-    app_info.pEngineName = "Witch Doctor";
-    app_info.engineVersion = 1;
-    app_info.apiVersion = VK_API_VERSION_1_0;
+bool VulkanRenderer::createInstance() {
+  if (!InitializeVulkan())
+    return false;
 
-    VkInstanceCreateInfo instance_create_info = {};
-    instance_create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instance_create_info.pNext = NULL;
-    instance_create_info.flags = 0;
-    instance_create_info.pApplicationInfo = &app_info;
-    instance_create_info.enabledExtensionCount = mInstanceExtensions.size();
-    instance_create_info.ppEnabledExtensionNames = mInstanceExtensions.empty()
-                                                   ? nullptr
-                                                   : mInstanceExtensions.data();
-    instance_create_info.enabledLayerCount = 0;
-    instance_create_info.ppEnabledLayerNames = NULL;
-
-    vkCreateInstance(&instance_create_info, nullptr, &mInstance);
+  mInstance = GetVulkanInstance();
+  return true;
 }
 
 void VulkanRenderer::destroyInstance() {
-    vkDestroyInstance(mInstance, nullptr);
-    mInstance = VK_NULL_HANDLE;
+  mInstance = VK_NULL_HANDLE;
 }
 
 

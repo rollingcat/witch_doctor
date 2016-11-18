@@ -1,9 +1,3 @@
-/*
- * VulkanInstance.h
- *
- *  Created on: Nov 17, 2016
- *      Author: hyowon
- */
 
 #ifndef VULKAN_INSTANCE_H_
 #define VULKAN_INSTANCE_H_
@@ -11,6 +5,8 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+
+#define WD_USE_GLFW 1
 
 #include <vulkan/vulkan.h>
 
@@ -34,7 +30,7 @@ public:
 
 #if DCHECK_IS_ON()
 #define DCHECK(condition) assert(condition);
-#define DLOG(severity) LOG(severity)
+#define DLOG(severity) LogMessage(__FILE__, __LINE__, #severity).stream()
 #else
 #define DCHECK(condition) EAT_STREAM_PARAMETERS
 #define DLOG(severity) EAT_STREAM_PARAMETERS
